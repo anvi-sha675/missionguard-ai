@@ -11,14 +11,47 @@ from app.core import config
 logger = logging.getLogger("missionguard.granite")
 
 GROUNDING_RULES = """You are the reasoning layer of MissionGuard AI, a spacecraft mission
-decision-support system. You are given a structured EVIDENCE PACKAGE produced by an upstream
-ML/statistics pipeline. Follow these rules strictly:
-- Do not invent telemetry values, sensor readings, or mission events not present in the evidence.
-- Do not fabricate certainty. If evidence is thin, say so explicitly.
-- Clearly distinguish OBSERVED facts (numbers in the evidence) from INFERRED causes (your reasoning).
-- Never issue or imply an autonomous spacecraft command. All actions require operator validation.
-- Structure your answer into: OBSERVATION, LIKELY EXPLANATION, EVIDENCE, RISK, POSSIBLE IMPACT,
-  RECOMMENDED ACTIONS, CONFIDENCE / LIMITATIONS.
+decision-support system.
+
+You are given a structured EVIDENCE PACKAGE produced by an upstream ML/statistics pipeline.
+
+STRICT GROUNDING RULES:
+- Use ONLY facts explicitly present in the EVIDENCE PACKAGE.
+- Never invent telemetry values, sensor readings, object properties, orbital parameters,
+  collision probabilities, covariance values, miss-distance probabilities, or mission events.
+- NEVER claim that a collision is probable, likely, or has a specific probability unless an
+  explicit collision probability is present in the evidence.
+- A close-approach distance alone does NOT establish collision probability.
+- A high relative velocity alone does NOT establish collision probability.
+- Do not infer that two objects will collide from a conjunction alert.
+- Treat risk_level as the classification produced by this prototype. Do not reinterpret it
+  as a certified probability of collision.
+- Clearly distinguish OBSERVED facts from INFERRED explanations.
+- If information is missing, explicitly say that it is unavailable.
+- Do not invent object size, mass, orbital path, trajectory intersection, covariance,
+  uncertainty, collision probability, or impact probability.
+- The conjunction data is SIMULATED and produced by a simplified screening model.
+- Never issue or imply an autonomous spacecraft command.
+- Recommendations must be framed as options for operator/mission-team review.
+- Do not claim that an avoidance maneuver should definitely be executed.
+- Do not claim that a real collision assessment has been performed.
+
+For conjunction explanations specifically:
+- State the observed closest approach distance, time to closest approach,
+  relative velocity, and prototype risk classification.
+- Explain that these values indicate why the prototype classified the event at that risk level,
+  but do NOT convert them into a collision probability.
+- State clearly that a real conjunction assessment would require authoritative tracking data,
+  orbital propagation, uncertainty/covariance information, and mission-specific analysis.
+
+Structure your answer into:
+OBSERVATION
+LIKELY EXPLANATION
+EVIDENCE
+RISK
+POSSIBLE IMPACT
+RECOMMENDED ACTIONS
+CONFIDENCE / LIMITATIONS
 """
 
 
@@ -200,16 +233,32 @@ class TemplateExplanationProvider(GraniteProvider):
         )
 
     def explain_conjunction(self, event: ConjunctionEvent) -> str:
-        return (
-            f"SIMULATED conjunction alert: {event.object_name} has a projected closest approach of "
-            f"{event.closest_approach_km:.1f} km in approximately {event.time_to_closest_approach_hours:.1f} hours, "
-            f"at a relative velocity of {event.relative_velocity_km_s:.1f} km/s. This is classified {event.risk_level} "
-            f"risk under this prototype's simplified screening model (closer approach and higher relative velocity "
-            f"increase the risk classification). This uses simulated object data and a simplified geometric model, "
-            f"not a real orbital propagator or a real tracked-object catalog -- treat this as a demonstration of "
-            f"the workflow, not an operational conjunction assessment. No automated avoidance maneuver is triggered "
-            f"by this system; a real conjunction assessment team would review this well before closest approach."
+        prompt = (
+            GROUNDING_RULES
+            + "\n\nCONJUNCTION EVENT (SIMULATED):\n"
+            + event.model_dump_json(indent=2)
+            + """
+
+    IMPORTANT:
+    Do not state or imply a collision probability.
+    Do not state that a collision will occur.
+    Do not invent orbital trajectories, object size, mass, covariance,
+    probability of collision, or impact probability.
+
+    The explanation must remain grounded in the supplied event fields.
+    """
         )
+
+        try:
+            narrative = self._call_granite(prompt)
+            return f"[SIMULATED DATA] {narrative}"
+        except Exception as e:
+            self._fallback("explain_conjunction", e)
+            narrative = TemplateExplanationProvider().explain_conjunction(event)
+            return (
+                "[AI service unavailable -- showing deterministic system analysis]\n\n"
+                + narrative
+            )
 
 
 def _rule_based_actions(subsystem: str, severity_band: str) -> list[str]:
