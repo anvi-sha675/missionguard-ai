@@ -1,29 +1,35 @@
-# Python virtual environment
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
 .venv/
 venv/
 env/
 
-# Environment files
+# Environment
 .env
 .env.*
-!.env.example
 
-# Frontend build output
+# Frontend
+node_modules/
 dist/
 dist-ssr/
-
-# Python cache
-__pycache__/
-*.py[cod]
+*.local
 
 # Logs
 *.log
-
-# OS files
-.DS_Store
-Thumbs.db
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # IDE
 .idea/
 .vscode/*
 !.vscode/extensions.json
+.DS_Store
+
+# IBM Bob local files
+.bob/
