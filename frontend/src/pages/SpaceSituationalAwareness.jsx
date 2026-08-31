@@ -164,11 +164,7 @@ export default function SpaceSituationalAwareness() {
     setExplanation(null);
     setLoadingExplain(true);
     try {
-      // Use the axios client via the api object's base URL instead of raw fetch
-      const res = await fetch(
-        `/api/conjunctions/${missionId}/${event.id}/explain`,
-      );
-      const data = await res.json();
+      const data = await api.explainConjunction(missionId, event.id);
       setExplanation(data.explanation);
     } catch {
       setExplanation("Explanation unavailable.");
