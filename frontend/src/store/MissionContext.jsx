@@ -17,12 +17,12 @@ export function MissionProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    api
-      .getMissionStatus(missionId)
-      .then(setSnapshot)
-      .catch(() => setSnapshot(null));
-  }, [missionId]);
+  // useEffect(() => {
+  //   api
+  //     .getMissionStatus(missionId)
+  //     .then(setSnapshot)
+  //     .catch(() => setSnapshot(null));
+  // }, [missionId]);
 
   const runScenario = useCallback(
     async (params, detector = "isolation_forest") => {
