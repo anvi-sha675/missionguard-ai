@@ -46,13 +46,30 @@ export const api = {
     client.get(`/mission-planner/${missionId}`).then((r) => r.data),
 
   // space situational awareness
-  getSpaceObjectSummary: () => client.get("/space-objects/summary").then((r) => r.data),
-  screenConjunctions: (missionId, spacecraftId, seed) =>
-    client
-      .post("/conjunctions/screen", null, { params: { mission_id: missionId, spacecraft_id: spacecraftId, seed } })
-      .then((r) => r.data),
-  getConjunctions: (missionId) =>
-    client.get("/conjunctions", { params: { mission_id: missionId } }).then((r) => r.data),
+  // space situational awareness
+getSpaceObjectSummary: () =>
+  client.get("/space-objects/summary").then((r) => r.data),
+
+screenConjunctions: (missionId, spacecraftId, seed) =>
+  client
+    .post("/conjunctions/screen", null, {
+      params: {
+        mission_id: missionId,
+        spacecraft_id: spacecraftId,
+        seed,
+      },
+    })
+    .then((r) => r.data),
+
+getConjunctions: (missionId) =>
+  client
+    .get("/conjunctions", { params: { mission_id: missionId } })
+    .then((r) => r.data),
+
+explainConjunction: (missionId, conjunctionId) =>
+  client
+    .get(`/conjunctions/${missionId}/${conjunctionId}/explain`)
+    .then((r) => r.data),
 
   // model evaluation
   evaluateModels: (scenario, severity, durationMinutes) =>
